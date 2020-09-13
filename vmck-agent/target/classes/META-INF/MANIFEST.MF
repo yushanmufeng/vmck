@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Built-By: feng
+Build-Jdk: 1.8.0_151
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Can-Set-Native-Method-Prefix: true
+Created-By: Maven Integration for Eclipse
+Premain-Class: yushanmufeng.vmck.agent.AgentBootstrap
+
