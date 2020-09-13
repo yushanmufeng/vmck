@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import yushanmufeng.vmck.agent.Config;
 import yushanmufeng.vmck.agent.driverimpl.VmClock;
 import yushanmufeng.vmck.agent.driverimpl.VmckDriverImpl;
 
@@ -87,6 +88,7 @@ public class AdminService {
 				}
 				System.out.println("allInterrupted:" + allInterrupted);
 			}
+			Config.saveParams();
 			System.out.println("=================Pass Time Finish=================");
 		}
 		

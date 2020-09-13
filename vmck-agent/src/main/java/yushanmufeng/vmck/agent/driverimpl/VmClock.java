@@ -7,6 +7,9 @@ public class VmClock {
 	// 向将来偏移的差值。vmTime = realTime + offsetTime
 	private volatile AtomicLong futureOffsetTime;
 	
+	/**
+	 * @param futureOffsetTime 向将来偏移的差值 , vmTime = realTime + offsetTime
+	 */
 	public VmClock(long futureOffsetTime) {
 		this.futureOffsetTime = new AtomicLong(futureOffsetTime);
 	}
@@ -23,4 +26,7 @@ public class VmClock {
 		futureOffsetTime.addAndGet(addOffsetTime);
 	}
 	
+	public long getOffsetTime() {
+		return futureOffsetTime.get();
+	}
 }

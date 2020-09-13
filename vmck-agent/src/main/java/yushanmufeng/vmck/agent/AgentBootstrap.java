@@ -47,6 +47,8 @@ final public class AgentBootstrap {
 	public static void premain(String agentArgs, Instrumentation inst) throws Exception {
 		try {
 			System.out.println("Vmck Is Starting...");
+			// 初始化参数配置，工作目录等
+			Config.init();
 			// 由BootstrapClassLoader加载vmck-core.jar,通过其中声明的公开方法及接口，完成BootstrapClassLoader加载的类对AppClassLoader类的调用转换
 			appendToBootstrapClassLoader(inst);
 			// 注册驱动类具体实现
@@ -55,6 +57,13 @@ final public class AgentBootstrap {
 			rebaseSystemClass(inst);
 			// 开启http监听
 			initHttpControl();
+			// 进程结束时，保存vmck状态
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					Config.saveParams();
+				}
+			}));
 		} catch (Exception e) {
 			System.out.println(e);
 			e.printStackTrace();
@@ -66,15 +75,7 @@ final public class AgentBootstrap {
 	 * 由BootstrapClassLoader加载vmck-core.jar,通过其中声明的公开方法及接口，完成BootstrapClassLoader加载的类对AppClassLoader类的调用转换
 	 */
 	private static void appendToBootstrapClassLoader(Instrumentation inst) throws Exception{
-		// 将jar解压至用户目录
-		String USER_HOME = System.getProperties().getProperty("user.home");
-		String SEPARATOR = System.getProperties().getProperty("file.separator");
-		String DIR = USER_HOME + SEPARATOR + "vmck";
-		File file = new File(DIR);
-		if(!file.exists()) {
-			file.mkdir();
-		}
-		// 读到内存，通过检查文件md5判断是否用户目录jar文件已存在
+		// 读到core.jar到内存，通过检查文件md5判断是否用户目录jar文件已存在
 		InputStream inputStream = null;
 		int nbyte = 0, cap = 1024;
 		ByteBuffer byteBuffer = ByteBuffer.allocate(cap);
@@ -95,10 +96,11 @@ final public class AgentBootstrap {
 		// 根据jar内容将md5拼接到文件名上。如果文件已存在，则无需重复解压
 		byte[] jarBytes = byteBuffer.array();
 		String md5 = MD5.encrypByMd5(jarBytes);
-		String JAR_PATH = DIR + SEPARATOR + VMCK_CORE_JAR_NAME + "-" + md5 + ".jar";
+		String JAR_PATH = Config.VMCK_DIR + Config.SEPARATOR + VMCK_CORE_JAR_NAME + "-" + md5 + ".jar";
 		File vmckCoreJar = null;
 		vmckCoreJar = new File(JAR_PATH);
 		if(!vmckCoreJar.exists()) {
+			// 将jar解压至用户目录
 			OutputStream outputStream = null;
 			try {
 				outputStream = new FileOutputStream(vmckCoreJar);
@@ -190,7 +192,7 @@ final public class AgentBootstrap {
 					response.res("Start Pass Time, " + startDate + " -> " + endDate);
 				}
 			})
-    		.startBackstage(51086);
+    		.startBackstage(Config.port);
 	}
 
 }

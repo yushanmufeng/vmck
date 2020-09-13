@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import yushanmufeng.vmck.agent.Config;
 import yushanmufeng.vmck.core.IVmckDriver;
 import yushanmufeng.vmck.core.VmckDriverFacade;
 
@@ -33,7 +34,7 @@ public class VmckDriverImpl implements IVmckDriver{
 	private VmClock vmClock;
 	
 	public VmckDriverImpl() {
-		vmClock = new VmClock(0);
+		vmClock = new VmClock(Config.params.getStandardTime() - System.currentTimeMillis());
 		threadSleepEndTime = new ConcurrentHashMap<Thread, Long>();
 		jumpTimeThreadSet = ConcurrentHashMap.newKeySet();
 		objectWaitEndTime = new ConcurrentHashMap<Thread, Long>();
