@@ -2,11 +2,9 @@ package yushanmufeng.vmck.agent;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 //import static net.bytebuddy.matcher.ElementMatchers.*;
 import java.lang.instrument.Instrumentation;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.jar.JarFile;
@@ -27,6 +25,7 @@ import yushanmufeng.vmck.agent.advice.DateAdvice;
 import yushanmufeng.vmck.agent.advice.SystemAdvice;
 import yushanmufeng.vmck.agent.advice.ThreadAdvice;
 import yushanmufeng.vmck.agent.util.MD5;
+import yushanmufeng.vmck.agent.util.ResourceUtil;
 
 /**
  * 代理启动类
@@ -37,7 +36,7 @@ final public class AgentBootstrap {
 	public static final String VMCK_DRIVER_FACADE = "yushanmufeng.vmck.core.VmckDriverFacade";
 	public static final String VMCK_DRIVER_IMP_CLASS = "yushanmufeng.vmck.agent.driverimpl.VmckDriverImpl";
 	public static String VMCK_CORE_JAR_NAME = "vmck-core";
-	
+	public static MiniHttpServer adminControlServer = null;
 	/**
 	 * 
 	 * @param agentArgs
@@ -61,7 +60,10 @@ final public class AgentBootstrap {
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
 				public void run() {
+					System.out.println("VMCK Exec Shutdownhook...");
+					if(adminControlServer != null) adminControlServer.stop();
 					Config.saveParams();
+					System.out.println("VMCK Exec Shutdownhook Finish");
 				}
 			}));
 		} catch (Exception e) {
@@ -75,26 +77,8 @@ final public class AgentBootstrap {
 	 * 由BootstrapClassLoader加载vmck-core.jar,通过其中声明的公开方法及接口，完成BootstrapClassLoader加载的类对AppClassLoader类的调用转换
 	 */
 	private static void appendToBootstrapClassLoader(Instrumentation inst) throws Exception{
-		// 读到core.jar到内存，通过检查文件md5判断是否用户目录jar文件已存在
-		InputStream inputStream = null;
-		int nbyte = 0, cap = 1024;
-		ByteBuffer byteBuffer = ByteBuffer.allocate(cap);
-		try {
-			inputStream =  AgentBootstrap.class.getResourceAsStream("/" + VMCK_CORE_JAR_NAME + ".jar") ;
-			while( (nbyte = inputStream.read()) != -1 ) {
-				if (!byteBuffer.hasRemaining()) {	// 缓冲区满，扩容
-					cap = cap + cap/3;
-					byteBuffer = ByteBuffer.allocate(cap).put( (ByteBuffer)byteBuffer.flip() );
-				}
-				byteBuffer.put((byte) nbyte);
-			}
-			
-		} finally{
-			if( inputStream != null ) inputStream.close();
-		}
-		byteBuffer.flip();
-		// 根据jar内容将md5拼接到文件名上。如果文件已存在，则无需重复解压
-		byte[] jarBytes = byteBuffer.array();
+		// 读到core.jar到内存，通过检查文件md5判断是否用户目录jar文件已存在: 将md5拼接到文件名上。如果文件已存在，则无需重复解压
+		byte[] jarBytes = ResourceUtil.readResource("/" + VMCK_CORE_JAR_NAME + ".jar");
 		String md5 = MD5.encrypByMd5(jarBytes);
 		String JAR_PATH = Config.VMCK_DIR + Config.SEPARATOR + VMCK_CORE_JAR_NAME + "-" + md5 + ".jar";
 		File vmckCoreJar = null;
@@ -105,7 +89,6 @@ final public class AgentBootstrap {
 			try {
 				outputStream = new FileOutputStream(vmckCoreJar);
 				outputStream.write(jarBytes, 0, jarBytes.length);
-				
 			} finally{
 				if( outputStream != null ) outputStream.close();
 			}
@@ -182,17 +165,45 @@ final public class AgentBootstrap {
 	 */
 	private static void initHttpControl() {
 		final AdminService adminService = new AdminService();
-    	new MiniHttpServer()
+		adminControlServer = new MiniHttpServer()
+			.get("*", new MatchListener() {
+				public void work(HttpRequest request, HttpResponse response) {
+					response.setHeader("Access-Control-Allow-Origin", "*");
+				}
+			})
+			.get("/", new MatchListener() {
+				public void work(HttpRequest request, HttpResponse response) {
+					byte[] bytes = ResourceUtil.readResource("/admin.html");
+					 response.resHtml( new String(bytes) ).end();
+				}
+			})
+			.get("/admin/status", new MatchListener() {
+				public void work(HttpRequest request, HttpResponse response) {
+					response.res(adminService.getStatus()).end();
+				}
+			})
     		.get("/admin/passtime", new MatchListener() {
 				public void work(HttpRequest request, HttpResponse response) {
 					int minute = Integer.parseInt( request.params.get("minute") );
 					String startDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( new Date(System.currentTimeMillis()) );
 					String endDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( new Date(System.currentTimeMillis() + minute * 60 * 1000) );
 					adminService.passThroughTime(minute);
-					response.res("Start Pass Time, " + startDate + " -> " + endDate);
+					response.res("Start Pass Time, " + startDate + " -> " + endDate).end();
 				}
 			})
-    		.startBackstage(Config.port);
+    		.get("/admin/recovertime", new MatchListener() {
+				public void work(HttpRequest request, HttpResponse response) {
+					adminService.recoverTime();
+					response.res("Recover Time Success").end();
+				}
+			})
+    		.get("/admin/stopprocess", new MatchListener() {
+				public void work(HttpRequest request, HttpResponse response) {
+					response.res("Will shutdown process. Bye~!").end();
+					System.exit(0);
+				}
+			});
+		adminControlServer.startBackstage(Config.port);
 	}
 
 }

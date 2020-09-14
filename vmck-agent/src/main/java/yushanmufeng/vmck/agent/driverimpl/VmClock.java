@@ -29,4 +29,9 @@ public class VmClock {
 	public long getOffsetTime() {
 		return futureOffsetTime.get();
 	}
+	
+	public void setOffsetTime(long offsetTime) {
+		futureOffsetTime.getAndSet(offsetTime);
+	}
+	
 }

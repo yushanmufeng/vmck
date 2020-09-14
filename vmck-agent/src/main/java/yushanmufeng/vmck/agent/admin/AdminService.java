@@ -1,5 +1,7 @@
 package yushanmufeng.vmck.agent.admin;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -16,6 +18,28 @@ public class AdminService {
 	public AdminService() {
 		this.driver = VmckDriverImpl.getInstance();
 		this.vmClock = driver.getVmClock();
+	}
+	
+	/**
+	 * 获取vmck状态
+	 */
+	public String getStatus() {
+		StringBuilder result = new StringBuilder();
+		String vmtime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format( new Date(System.currentTimeMillis()) );
+		result.append("{")
+			.append("\"name\":\"").append(Config.name).append("\",")
+			.append("\"temppath\":\"").append(Config.VMCK_DIR + Config.SEPARATOR + Config.name).append("\",")
+			.append("\"vmtime\":\"").append( vmtime ).append("\"")
+			.append("}")
+		;
+		return result.toString();
+	}
+	
+	/**
+	 * 恢复时间为正常时间。 回退时间可能会导致程序发生逻辑异常，重置时间后最好重启程序
+	 */
+	public void recoverTime() {
+		vmClock.setOffsetTime(0);
 	}
 	
 	/**

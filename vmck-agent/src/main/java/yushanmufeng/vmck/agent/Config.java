@@ -8,8 +8,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 
-import yushanmufeng.vmck.agent.driverimpl.VmckDriverImpl;
-
 public class Config {
 	
 	/** vmck工作根目录 */

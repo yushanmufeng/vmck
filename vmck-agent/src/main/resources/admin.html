@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>VMCK-ADMIN</title>
+<style type="text/css">
+	html, body, div{
+		margin:0; padding:0;
+	}
+	body{
+		background: #ffffff;
+		width: 100%; height: 100%;
+		position: relative;
+		background: #F5F5F5;
+	}
+	
+	table.gridtable {
+		font-family: verdana,arial,sans-serif;
+		font-size:11px;
+		color:#333333;
+		border-width: 1px;
+		border-color: #666666;
+		border-collapse: collapse;
+	}
+	table.gridtable th {
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background-color: #dedede;
+	}
+	table.gridtable td {
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background-color: #ffffff;
+		text-align: center;
+	}
+	
+	#container{
+		position: absolute;
+		width: 640px;
+		left: 50%; margin-left: -320px; /*宽度值的负一半*/
+		background: #F5F5F5;
+	}
+	.title-row{
+		float:left; position: relative;
+		font-family:Arial;
+		width: 100%; height:53px;
+	}
+	
+	.main-title{
+		float:left; position: relative; margin-top:10px;
+		color: transparent; background-color : red;
+		font-weight: bold; font-size: 32px; letter-spacing: 2px;
+		text-shadow : rgba(234,111,90,0.5) 0 5px 6px, rgba(234,111,90,0.2) 1px 3px 3px;
+		-webkit-background-clip : text;
+	}
+	.sub-title{
+		float:left; position: relative;
+		font-size: 13px; color: #666666;
+		margin-top: 27px; margin-left:4px;
+	}
+	.author{
+		float:right; position: relative;
+		font-size: 12px; color: #666666;
+		margin-top: 27px;
+	}
+	
+	.split-row{
+		float:left; position: relative;
+		height: 2px;
+		background: #bbbbbb;
+		width: 100%;
+	}
+	.element-row{
+		float:left; position: relative;
+		width: 100%;
+	}
+</style>
+<script type="text/javascript">
+	// ajax util
+	var Ajax = {
+	  get: function(url, fn) {
+		// XMLHttpRequest对象用于在后台与服务器交换数据   
+		var xhr = new XMLHttpRequest();            
+		xhr.open('GET', url, true);
+		xhr.onreadystatechange = function() {
+		  // readyState == 4说明请求已完成
+		  if (xhr.readyState == 4 && xhr.status == 200 || xhr.status == 304) { 
+			// 从服务器获得数据 
+			fn.call(this, xhr.responseText);  
+		  }
+		};
+		xhr.send();
+	  },
+	  // datat应为'a=a1&b=b1'这种字符串格式，在jq里如果data为对象会自动将对象转成这种字符串格式
+	  post: function (url, data, fn) {
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", url, true);
+		// 添加http头，发送信息至服务器时内容编码类型
+		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");  
+		xhr.onreadystatechange = function() {
+		  if (xhr.readyState == 4 && (xhr.status == 200 || xhr.status == 304)) {
+			fn.call(this, xhr.responseText);
+		  }
+		};
+		xhr.send(data);
+	  }
+	}
+	
+	// dateformat util
+	Date.prototype.Format = function (fmt) {
+		var o = {
+			"M+": this.getMonth() + 1, //月份 
+			"d+": this.getDate(), //日 
+			"H+": this.getHours(), //小时 
+			"m+": this.getMinutes(), //分 
+			"s+": this.getSeconds(), //秒 
+			"q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+			"S": this.getMilliseconds() //毫秒 
+		};
+		if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+		for (var k in o)
+		if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+		return fmt;
+	}
+</script>
+</head>
+<body>
+	<div id="container">
+		<div class="title-row">
+			<div class="main-title">VMCK</div>
+			<div class="sub-title">admin</div>
+			<div class="author">
+				by <a href="https://github.com/yushanmufeng" target="_blank">yushanmufeng</a>
+			</div>	
+		</div>
+		<div class="split-row"></div>
+		
+		<div class="element-row" style="margin-top:10px;">
+			<input id="minutes" type="number" style="width:72px;"></input>
+			<button onclick="passtimeMinute()">PASS MINUTES</button>
+		</div>
+		
+		<div class="element-row" style="margin-top:10px;">
+			<input id="hours" type="number" style="width:72px;"></input>
+			<button onclick="passtimeHour()">PASS HOURS</button>
+		</div>
+		
+		<div class="element-row" style="margin-top:10px;">
+			<button onclick="refreshStatus()">REFRESH</button>
+			<button disabled="disabled">AUTO REFRESH</button>
+			<button onclick="recoverTime()">RECOVER TIME</button>
+			<button onclick="stopProcess()">STOP PROCESS</button>
+		</div>
+		<div class="element-row" style="margin-top:10px;">
+			<table class="gridtable" style="width:100%;">
+				<tr>
+					<th>Status</th>
+					<th>Name</th>
+					<th>Temp Path</th>
+					<th>VM Time</th>
+					<th>Last Refresh Time</th>
+				<tr>
+				<tr>
+					<td id="status">Stop</td>
+					<td id="name"></td>
+					<td id="temppath"></td>
+					<td id="vmtime"></td>
+					<td id="lastrefreshtime"></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+
+	// 刷新vmck状态
+	var refreshStatus = function(){
+		Ajax.get("/admin/status", function(res){
+			var statusObj = JSON.parse( res.replace(/\\/g,"/") );
+			document.getElementById("status").innerHTML = 'Running';
+			document.getElementById("name").innerHTML = statusObj.name;
+			document.getElementById("temppath").innerHTML = statusObj.temppath;
+			document.getElementById("vmtime").innerHTML = statusObj.vmtime;
+			document.getElementById("lastrefreshtime").innerHTML = new Date().Format("yyyy-MM-dd HH:mm:ss");
+		});
+	}
+	refreshStatus();
+	
+	// 恢复时间为正常时间
+	var recoverTime = function(){
+		Ajax.get("/admin/recovertime", function(res){
+
+		});
+	}
+	// 结束java进程
+	var stopProcess = function(){
+		Ajax.get("/admin/stopprocess", function(res){
+			document.getElementById("status").innerHTML = 'Stop';
+		});
+	}
+	
+	// 跳过时间，单位分钟
+	var passtimeMinute = function(){
+		_passtime(document.getElementById("minutes").value);
+	}
+	
+	// 跳过时间，单位小时
+	var passtimeHour = function(){
+		_passtime(parseInt(document.getElementById("hours").value) * 60);
+	}
+	
+	// 跳过时间
+	var _passtime = function(minutes){
+		Ajax.get("/admin/passtime?minute="+minutes, function(res){
+
+		});
+	}
+	
+</script>
+</html>
