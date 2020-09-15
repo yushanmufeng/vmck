@@ -1,12 +1,16 @@
 # VMCK
-基于JVM运行时编辑字节码技术，通过对JDK时间与线程相关函数代理，实现非侵入式控制运行时系统时间。使用此JAVA代理程序，可在不修改操作系统时间的情况下，调整JAVA程序运行时获取到的当前时间; 以及加速程序的时间，触发定时任务。
+基于Javaagent与JVM运行时编辑字节码技术，通过对JDK时间与线程相关函数代理，实现非侵入式控制运行时系统时间。使用此JAVA代理程序，可在不修改操作系统时间的情况下，调整JAVA程序运行时获取到的当前时间; 以及加速程序的时间，触发定时任务。
 
 [![standard-readme compliant](https://img.shields.io/badge/Download-0.0.1-blue.svg?style=flat-square)](http://www.fanguang.fun/vmck-agent-0.0.1.jar)
 [![standard-readme compliant](https://img.shields.io/badge/ByteBuddy-1.10.14-brightgreen.svg?style=flat-square)](https://github.com/raphw/byte-buddy)
 
+## 适用场景
 
-## 最简单的例子
+此项目比较适合在Java项目的开发与测试阶段使用，可以方便的部署在开发环境与测试环境，无需修改原有的项目代码。尤其适合需要频繁修改时间测试功能、希望任何情况（如停止程序或修改系统时间）都能保证定时任务执行逻辑与顺序的项目。
 
+## 如何使用
+
+首先创建一个简单的main方法，每隔1秒会打印一次当前系统时间。代码如下：
 ```
 public static void main(String[] args) {
 	new Thread(() -> {
@@ -24,8 +28,8 @@ public static void main(String[] args) {
 }
 ```
 
-这是一个非常简单的Java程序，每隔1秒会打印一次当前系统时间。
-
+从
+[![standard-readme compliant](https://img.shields.io/badge/Download-0.0.1-blue.svg?style=flat-square)](http://www.fanguang.fun/vmck-agent-0.0.1.jar)
 下载vmck-agent-0.0.1.jar, 在JVM启动参数中，增加：
 ```
 -javaagent:yourpath/vmck-agent-0.0.1.jar -Dvmck.name=test1
